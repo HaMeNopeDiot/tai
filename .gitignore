@@ -1,0 +1,4 @@
+.config
+responses/
+topics/
+__pycache__/
