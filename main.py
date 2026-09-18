@@ -2,6 +2,7 @@ from openai import OpenAI
 import subprocess
 import argparse
 import json
+import os
 from pathlib import Path
 
 from tools.config_data import ConfigData
@@ -57,6 +58,8 @@ def glow_md(filename: str):
 
 
 if __name__ == "__main__":
+    os.makedirs("topics", exist_ok=True)
+    os.makedirs("responses", exist_ok=True)
     args = parser_enable()
 
     dagent  = Dumper()
