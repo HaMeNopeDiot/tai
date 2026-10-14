@@ -8,22 +8,29 @@ class Dumper:
         self.resp_dir = Path(resp_dir)
 
 
-    def _get_unique_filename(self, filepath: Path) -> Path:
-        # Если файла нет, возвращаем путь как есть
-        if not os.path.exists(filepath):
-            return filepath
-
-        # Разделяем путь на директорию/имя и расширение
-        # Пример: 'C:/docs/report.txt' -> ('C:/docs/report', '.txt')
-        base, extension = os.path.splitext(filepath)
-
-        counter = 1
-        # Цикл работает, пока файл с таким именем существует
-        while os.path.exists(f"{base}({counter}){extension}"):
-            counter += 1
-
-        # Возвращаем уникальный путь с номером
-        return f"{base}({counter}){extension}"
+    def _get_next_response_number(self, topic_dir: Path) -> int:
+        # Получаем все файлы в директории топика
+        if not topic_dir.exists():
+            return 1
+        
+        # Ищем все .md файлы с числовыми именами
+        existing_files = list(topic_dir.glob("*.md"))
+        if not existing_files:
+            return 1
+        
+        # Извлекаем номера из имен файлов
+        numbers = []
+        for f in existing_files:
+            try:
+                # Убираем расширение и пробуем преобразовать в число
+                num = int(f.stem)
+                numbers.append(num)
+            except ValueError:
+                # Если имя файла не число, пропускаем
+                continue
+        
+        # Возвращаем следующий номер после максимального
+        return max(numbers) + 1 if numbers else 1
 
     def dump_json(self, topic_name: str, msg: str):
         if topic_name != "":
@@ -33,15 +40,24 @@ class Dumper:
 
     def dump_md(self, topic_name: str, content: str) -> Path:
         if topic_name != "":
-            original_filename = f"{topic_name}.md"
+            # Создаем папку для топика
+            topic_dir = self.resp_dir / topic_name
+            topic_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Получаем следующий номер для файла
+            next_num = self._get_next_response_number(topic_dir)
+            filename = topic_dir / f"{next_num:03d}.md"
         else:
-            original_filename = "ans.md"
-        unique_name = self._get_unique_filename(self.resp_dir / original_filename)
+            # Для сообщений без топика создаем папку "general"
+            general_dir = self.resp_dir / "general"
+            general_dir.mkdir(parents=True, exist_ok=True)
+            
+            next_num = self._get_next_response_number(general_dir)
+            filename = general_dir / f"{next_num:03d}.md"
 
-        ufilename = unique_name
-        with open(ufilename, "w", encoding="utf-8") as f:
+        with open(filename, "w", encoding="utf-8") as f:
             f.write(content.strip())
-        return ufilename
+        return filename
 
 
 if __name__ == "__main__":
