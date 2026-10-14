@@ -19,18 +19,22 @@ def prepare_chat_request(args):
             {"role": "assistant", "content": content},
         ]
     elif args.topic != "":
+        filename = Path("topics") / f"{args.topic}.json"
         try:
-            filename = Path("topics") / f"{args.topic}.json"
+            # Пытаемся открыть и прочитать существующий файл
             with open(filename, 'r', encoding='utf-8') as f:
                 msg = json.load(f)
-            msg.append(user_text)
-        except FileNotFoundError:
-            with open(filename, 'w', encoding='utf-8') as f:
-                pass
-            msg = [
-                {"role": "system", "content": "Ты полезный помощник."},
-                user_text,
-            ]
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Если файла нет ИЛИ он оказался пустым/битым
+            msg = [{"role": "system", "content": "Ты полезный помощник."}]
+
+        # Добавляем новое сообщение в список (работает для обоих случаев)
+        msg.append(user_text)
+
+        # Сохраняем обновленный список обратно в файл, чтобы он не оставался пустым
+        filename.parent.mkdir(parents=True, exist_ok=True) # На случай, если папки "topics" еще нет
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(msg, f, ensure_ascii=False, indent=4)
     else:
         msg = [
             {"role": "system", "content": "Ты полезный помощник."},
